@@ -1,0 +1,15 @@
+.git
+.gitignore
+.env
+README.md
+Dockerfile
+docker-compose*.yml
+node_modules
+videos
+dbdata
+runcontainer*.sh
+buildimage*.sh
+alpine
+debian
+ubuntu
+sql
