@@ -47,6 +47,7 @@ RUN npm install && \
 # Copy code
 COPY docker-entrypoint.sh .
 COPY pm2Shinobi.yml .
+RUN chmod -f +x ./*.sh
 
 # Copy default configuration files
 COPY ./config/conf.sample.json /opt/shinobi/conf.sample.json

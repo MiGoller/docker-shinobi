@@ -1,0 +1,7 @@
+.git
+.gitignore
+README.md
+Dockerfile
+node_modules
+videos
+dbdata
