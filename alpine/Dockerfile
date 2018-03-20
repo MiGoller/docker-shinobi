@@ -6,18 +6,14 @@ FROM node:8-alpine
 LABEL Author="MiGoller"
 
 # Set environment variables to default values
-ENV MYSQL_USER=majesticflame \
-    MYSQL_PASSWORD=password \
-    MYSQL_HOST=127.0.0.1 \
-    MYSQL_DATABASE=ccio \
-    ADMIN_USER=admin@shinobi.video \
+ENV ADMIN_USER=admin@shinobi.video \
     ADMIN_PASSWORD=administrator \
-    CRON_KEY=b59b5c62-57d0-4cd1-b068-a55e5222786f \
-    PLUGINKEY_MOTION=49ad732d-1a4f-4931-8ab8-d74ff56dac57 \
-    PLUGINKEY_OPENCV=6aa3487d-c613-457e-bba2-1deca10b7f5d \
-    PLUGINKEY_OPENALPR=SomeOpenALPRkeySoPeopleDontMessWithYourShinobi \
+    CRON_KEY=fd6c7849-904d-47ea-922b-5143358ba0de \
+    PLUGINKEY_MOTION=b7502fd9-506c-4dda-9b56-8e699a6bc41c \
+    PLUGINKEY_OPENCV=f078bcfe-c39a-4eb5-bd52-9382ca828e8a \
+    PLUGINKEY_OPENALPR=dbff574e-9d4a-44c1-b578-3dc0f1944a3c \
     MOTION_HOST=localhost \ 
-    MOTION_PORT=8080
+    MOTION_PORT=8080 
 
 # Create the custom configuration dir
 RUN mkdir -p /config
@@ -28,8 +24,18 @@ RUN mkdir -p /opt/shinobi
 WORKDIR /opt/shinobi
 
 # Install package dependencies
-RUN apk add --update --no-cache ffmpeg python pkgconfig cairo-dev make g++ jpeg-dev git ttf-freefont
+RUN apk add --update --no-cache ffmpeg python pkgconfig cairo-dev make g++ jpeg-dev git ttf-freefont mysql-client wget tar xz
 # To-DO: Alpine ffmpeg is missing configuration "--enable-libfreetype"
+
+# Install ffmpeg static build version
+RUN wget https://s3.amazonaws.com/cloudcamio/ffmpeg-release-64bit-static.tar.xz
+
+RUN tar xpvf ./ffmpeg-release-64bit-static.tar.xz -C ./ \
+    && cp -f ./ffmpeg-3.3-64bit-static/ff* /usr/bin/ \
+    && chmod +x /usr/bin/ff*
+
+RUN rm -f ffmpeg-release-64bit-static.tar.xz \
+    && rm -rf ./ffmpeg-3.3-64bit-static
 
 # Clone the Shinobi CCTV PRO repo
 RUN mkdir master_temp
@@ -41,7 +47,7 @@ RUN rm -rf $distro master_temp
 RUN npm install pm2 -g
 
 RUN npm install && \
-    npm install canvas moment --unsafe-perm
+    npm install canvas@1.6.5 moment --unsafe-perm
 
 # Copy code
 COPY docker-entrypoint.sh .

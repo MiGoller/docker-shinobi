@@ -6,18 +6,14 @@ FROM node:8
 LABEL Author="MiGoller"
 
 # Set environment variables to default values
-ENV MYSQL_USER=majesticflame \
-    MYSQL_PASSWORD=password \
-    MYSQL_HOST=127.0.0.1 \
-    MYSQL_DATABASE=ccio \
-    ADMIN_USER=admin@shinobi.video \
+ENV ADMIN_USER=admin@shinobi.video \
     ADMIN_PASSWORD=administrator \
-    CRON_KEY=b59b5c62-57d0-4cd1-b068-a55e5222786f \
-    PLUGINKEY_MOTION=49ad732d-1a4f-4931-8ab8-d74ff56dac57 \
-    PLUGINKEY_OPENCV=6aa3487d-c613-457e-bba2-1deca10b7f5d \
-    PLUGINKEY_OPENALPR=SomeOpenALPRkeySoPeopleDontMessWithYourShinobi \
+    CRON_KEY=fd6c7849-904d-47ea-922b-5143358ba0de \
+    PLUGINKEY_MOTION=b7502fd9-506c-4dda-9b56-8e699a6bc41c \
+    PLUGINKEY_OPENCV=f078bcfe-c39a-4eb5-bd52-9382ca828e8a \
+    PLUGINKEY_OPENALPR=dbff574e-9d4a-44c1-b578-3dc0f1944a3c \
     MOTION_HOST=localhost \ 
-    MOTION_PORT=8080
+    MOTION_PORT=8080 
 
 # Create the custom configuration dir
 RUN mkdir -p /config
@@ -30,7 +26,8 @@ WORKDIR /opt/shinobi
 # Install package dependencies
 RUN echo "deb http://ftp.debian.org/debian jessie-backports main" >> /etc/apt/sources.list \
     && apt-get update \
-    && apt-get install -y ffmpeg python pkg-config libcairo-dev make g++ libjpeg-dev git
+    && apt-get install -y ffmpeg python pkg-config libcairo-dev make g++ libjpeg-dev git mysql-client \
+    && apt-get clean
 
 # Clone the Shinobi CCTV PRO repo
 RUN mkdir master_temp
@@ -42,7 +39,7 @@ RUN rm -rf $distro master_temp
 RUN npm install pm2 -g
 
 RUN npm install && \
-    npm install canvas moment --unsafe-perm
+    npm install canvas@1.6.5 moment --unsafe-perm
 
 # Copy code
 COPY docker-entrypoint.sh .
@@ -58,6 +55,10 @@ VOLUME ["/opt/shinobi/videos"]
 VOLUME ["/config"]
 
 EXPOSE 8080
+
+# Set the user to use when running this image
+# See docker-entrypoint.sh on how to change the uid/gid of the user.
+#USER node
 
 ENTRYPOINT ["/opt/shinobi/docker-entrypoint.sh"]
 
