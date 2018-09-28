@@ -1,22 +1,17 @@
 version: '2'
 services:
-  db:
-    image: mariadb
-    env_file:
-      - MySQL.env
-    volumes:
-      - ./datadir:/var/lib/mysql
-  web:
+  app:
     build: .
     env_file:
-      - MySQL.env
+      - SQLite3.env
       - Shinobi.env
     volumes:
       - /etc/localtime:/etc/localtime:ro
       - /etc/timezone:/etc/timezone:ro
       - ./config:/config
       - ./videos:/opt/shinobi/videos
-    depends_on:
-      - db
+      - ./dbdata:/opt/dbdata
     ports:
       - "8080:8080"
+    command: pm2-docker pm2Shinobi.yml
+    

@@ -18,16 +18,21 @@ ENV ADMIN_USER=admin@shinobi.video \
 # Create the custom configuration dir
 RUN mkdir -p /config
 
+# Create the Sqlite data dir
+RUN mkdir /opt/dbdata
+
 # Create the working dir
 RUN mkdir -p /opt/shinobi
 
 WORKDIR /opt/shinobi
 
-# Install package dependencies
+# Install package dependencies  ffmpeg python pkgconfig make g++ git ttf-freefont sqlite socat
 RUN echo "deb http://ftp.debian.org/debian jessie-backports main" >> /etc/apt/sources.list \
     && apt-get update \
-    && apt-get install -y ffmpeg python pkg-config libcairo-dev make g++ libjpeg-dev git mysql-client \
+    && apt-get install -y ffmpeg python pkg-config make g++ git mysql-client sqlite socat \
     && apt-get clean
+# && apt-get install -y ffmpeg python pkg-config make g++ git libcairo-dev libjpeg-dev mysql-client sqlite socat \
+# && apt-get install -y ffmpeg python pkg-config make g++ git mysql-client sqlite socat \
 
 # Clone the Shinobi CCTV PRO repo
 RUN mkdir master_temp
@@ -39,7 +44,9 @@ RUN rm -rf $distro master_temp
 RUN npm install pm2 -g
 
 RUN npm install && \
-    npm install canvas@1.6.5 moment --unsafe-perm
+    npm install sqlite3
+# RUN npm install && \
+#     npm install canvas@1.6.5 moment --unsafe-perm
 
 # Copy code
 COPY docker-entrypoint.sh .
@@ -49,8 +56,9 @@ RUN chmod -f +x ./*.sh
 # Copy default configuration files
 COPY ./config/conf.sample.json /opt/shinobi/conf.sample.json
 COPY ./config/super.sample.json /opt/shinobi/super.sample.json
-COPY ./config/motion.conf.sample.json /opt/shinobi/plugins/motion/conf.sample.json
+#COPY ./config/motion.conf.sample.json /opt/shinobi/plugins/motion/conf.sample.json
 
+VOLUME ["/opt/dbdata"]
 VOLUME ["/opt/shinobi/videos"]
 VOLUME ["/config"]
 

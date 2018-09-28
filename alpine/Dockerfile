@@ -18,24 +18,26 @@ ENV ADMIN_USER=admin@shinobi.video \
 # Create the custom configuration dir
 RUN mkdir -p /config
 
+# Create the Sqlite data dir
+RUN mkdir /opt/dbdata
+
 # Create the working dir
 RUN mkdir -p /opt/shinobi
 
 WORKDIR /opt/shinobi
 
 # Install package dependencies
-RUN apk add --update --no-cache ffmpeg python pkgconfig cairo-dev make g++ jpeg-dev git ttf-freefont mysql-client wget tar xz
-# To-DO: Alpine ffmpeg is missing configuration "--enable-libfreetype"
+RUN apk add --update --no-cache ffmpeg python pkgconfig make g++ jpeg-dev git ttf-freefont mysql-client wget tar xz sqlite socat
 
-# Install ffmpeg static build version
-RUN wget https://s3.amazonaws.com/cloudcamio/ffmpeg-release-64bit-static.tar.xz
+# Install ffmpeg static build version from cdn.shinobi.video
+RUN wget https://cdn.shinobi.video/installers/ffmpeg-release-64bit-static.tar.xz
 
 RUN tar xpvf ./ffmpeg-release-64bit-static.tar.xz -C ./ \
-    && cp -f ./ffmpeg-3.3-64bit-static/ff* /usr/bin/ \
+    && cp -f ./ffmpeg-3.3.4-64bit-static/ff* /usr/bin/ \
     && chmod +x /usr/bin/ff*
 
 RUN rm -f ffmpeg-release-64bit-static.tar.xz \
-    && rm -rf ./ffmpeg-3.3-64bit-static
+    && rm -rf ./ffmpeg-3.3.4-64bit-static
 
 # Clone the Shinobi CCTV PRO repo
 RUN mkdir master_temp
@@ -47,7 +49,9 @@ RUN rm -rf $distro master_temp
 RUN npm install pm2 -g
 
 RUN npm install && \
-    npm install canvas@1.6.5 moment --unsafe-perm
+    npm install sqlite3
+# RUN npm install && \
+#     npm install canvas@1.6.5 moment --unsafe-perm
 
 # Copy code
 COPY docker-entrypoint.sh .
@@ -57,8 +61,9 @@ RUN chmod -f +x ./*.sh
 # Copy default configuration files
 COPY ./config/conf.sample.json /opt/shinobi/conf.sample.json
 COPY ./config/super.sample.json /opt/shinobi/super.sample.json
-COPY ./config/motion.conf.sample.json /opt/shinobi/plugins/motion/conf.sample.json
+# COPY ./config/motion.conf.sample.json /opt/shinobi/plugins/motion/conf.sample.json
 
+VOLUME ["/opt/dbdata"]
 VOLUME ["/opt/shinobi/videos"]
 VOLUME ["/config"]
 

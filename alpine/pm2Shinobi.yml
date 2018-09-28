@@ -5,6 +5,4 @@ apps:
   - script   : '/opt/shinobi/cron.js'
     name     : 'Cron-App'
     kill_timeout  : 5000
-  - script   : '/opt/shinobi/plugins/motion/shinobi-motion.js'
-    name     : 'Motion-App'
-    kill_timeout  : 5000
+    

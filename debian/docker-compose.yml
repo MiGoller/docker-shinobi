@@ -1,7 +1,7 @@
 version: '2'
 services:
   db:
-    image: mysql
+    image: mariadb
     env_file:
       - MySQL.env
     volumes:

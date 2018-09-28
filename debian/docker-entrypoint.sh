@@ -23,54 +23,63 @@ if [ ! -f /opt/shinobi/plugins/motion/conf.json ]; then
     cp /opt/shinobi/plugins/motion/conf.sample.json /opt/shinobi/plugins/motion/conf.json
 fi
 
-# Hash the admins password
-if [ -n "${ADMIN_PASSWORD}" ]; then
-    echo "Hash admin password ..."
-    ADMIN_PASSWORD_MD5=$(echo -n "${ADMIN_PASSWORD}" | md5sum | sed -e 's/  -$//')
+# Basic SQLite3 setup
+chmod -R 777 /opt/dbdata
+
+if [ ! -e "/opt/dbdata/shinobi.sqlite" ]; then
+    echo "Creating shinobi.sqlite for SQLite3..."
+    cp /opt/shinobi/sql/shinobi.sample.sqlite /opt/dbdata/shinobi.sqlite
 fi
 
-# Create MySQL database if it does not exists
-if [ -n "${MYSQL_HOST}" ]; then
-    echo "Wait for MySQL server" ...
-    while ! mysqladmin ping -h"$MYSQL_HOST" --silent; do
-        sleep 1
-    done
-fi
+# Use embedded SQLite3 database ?
+if [ -n "${EMBEDDEDDB}" ]; then
+    # Set database to SQLite3
+    echo "Setting database to SQLite3 ..."
+    node /opt/shinobi/tools/modifyConfiguration.js databaseType=sqlite3 db='{"filename":"/opt/dbdata/shinobi.sqlite"}' cpuUsageMarker=CPU
+else 
+    # Create MySQL database if it does not exists
+    if [ -n "${MYSQL_HOST}" ]; then
+        echo "Wait for MySQL server" ...
+        while ! mysqladmin ping -h"$MYSQL_HOST" --silent; do
+            sleep 1
+        done
+    fi
 
-if [ -n "${MYSQL_ROOT_USER}" ]; then
-    if [ -n "${MYSQL_ROOT_PASSWORD}" ]; then
-        echo "Setting up MySQL database if it does not exists ..."
+    if [ -n "${MYSQL_ROOT_USER}" ]; then
+        if [ -n "${MYSQL_ROOT_PASSWORD}" ]; then
+            echo "Setting up MySQL database if it does not exists ..."
 
-        mkdir -p sql_temp
-        cp -f ./sql/framework.sql ./sql_temp
-        cp -f ./sql/user.sql ./sql_temp
+            mkdir -p sql_temp
+            cp -f ./sql/framework.sql ./sql_temp
+            cp -f ./sql/user.sql ./sql_temp
 
-        if [ -n "${MYSQL_DATABASE}" ]; then
-            echo "Modifying database name ..."
-            sed -i  -e "s/ccio/${MYSQL_DATABASE}/g" \
-                "./sql_temp/framework.sql"
-            
-            sed -i  -e "s/ccio/${MYSQL_DATABASE}/g" \
-                "./sql_temp/user.sql"
-        fi
-
-        if [ -n "${MYSQL_ROOT_USER}" ]; then
-            if [ -n "${MYSQL_ROOT_PASSWORD}" ]; then
-                echo "Modifying user creation script ..."
-                sed -i -e "s/majesticflame/${MYSQL_USER}/g" \
-                    -e "s/\x27\x27/\x27${MYSQL_PASSWORD}\x27/g" \
-                    -e "s/127.0.0.1/%/g" \
+            if [ -n "${MYSQL_DATABASE}" ]; then
+                echo "Modifying database name ..."
+                sed -i  -e "s/ccio/${MYSQL_DATABASE}/g" \
+                    "./sql_temp/framework.sql"
+                
+                sed -i  -e "s/ccio/${MYSQL_DATABASE}/g" \
                     "./sql_temp/user.sql"
             fi
+
+            if [ -n "${MYSQL_ROOT_USER}" ]; then
+                if [ -n "${MYSQL_ROOT_PASSWORD}" ]; then
+                    echo "Modifying user creation script ..."
+                    sed -i -e "s/majesticflame/${MYSQL_USER}/g" \
+                        -e "s/\x27\x27/\x27${MYSQL_PASSWORD}\x27/g" \
+                        -e "s/127.0.0.1/%/g" \
+                        "./sql_temp/user.sql"
+                fi
+            fi
+
+            echo "Create database schema if it does not exists ..."
+            mysql -u $MYSQL_ROOT_USER -p$MYSQL_ROOT_PASSWORD -h $MYSQL_HOST -e "source ./sql_temp/framework.sql" || true
+
+            echo "Create database user if it does not exists ..."
+            mysql -u $MYSQL_ROOT_USER -p$MYSQL_ROOT_PASSWORD -h $MYSQL_HOST -e "source ./sql_temp/user.sql" || true
+
+            rm -rf sql_temp
         fi
-
-        echo "Create database schema if it does not exists ..."
-        mysql -u $MYSQL_ROOT_USER -p$MYSQL_ROOT_PASSWORD -h $MYSQL_HOST -e "source ./sql_temp/framework.sql" || true
-
-        echo "Create database user if it does not exists ..."
-        mysql -u $MYSQL_ROOT_USER -p$MYSQL_ROOT_PASSWORD -h $MYSQL_HOST -e "source ./sql_temp/user.sql" || true
-
-        rm -rf sql_temp
     fi
 fi
 
@@ -115,7 +124,12 @@ sed -i -e 's/"host":"localhost"/"host":"'"${MOTION_HOST}"'"/g' \
 
 # Set the admin password
 if [ -n "${ADMIN_USER}" ]; then
-    if [ -n "${ADMIN_PASSWORD_MD5}" ]; then
+    if [ -n "${ADMIN_PASSWORD}" ]; then
+        # Hash the admins password
+        echo "Hash admin password ..."
+        ADMIN_PASSWORD_MD5=$(echo -n "${ADMIN_PASSWORD}" | md5sum | sed -e 's/  -$//')
+        # Set Shinobi's superuser's credentials
+        echo "Set Shinobi's superuser's credentials ..."
         sed -i -e 's/"mail":"admin@shinobi.video"/"mail":"'"${ADMIN_USER}"'"/g' \
             -e "s/21232f297a57a5a743894a0e4a801fc3/${ADMIN_PASSWORD_MD5}/g" \
             "/opt/shinobi/super.json"
