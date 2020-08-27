@@ -1,0 +1,292 @@
+image: docker:latest
+
+services:
+  - docker:dind
+
+stages:
+  - build
+  - test
+  - release
+  - deploy
+
+variables:
+  DOCKER_HOST: tcp://docker:2375
+  DOCKER_DRIVER: overlay2
+  CONTAINER_TEST_IMAGE: $CI_REGISTRY_IMAGE:$CI_COMMIT_REF_SLUG-ms
+  CONTAINER_RELEASE_IMAGE: $CI_REGISTRY_IMAGE:$CI_COMMIT_REF_SLUG
+
+before_script:
+#  - docker login -u "$CI_REGISTRY_USER" -p "$CI_REGISTRY_PASSWORD" $CI_REGISTRY
+  - docker login -u gitlab-ci-token -p $CI_JOB_TOKEN $CI_REGISTRY
+  - apk add --update --no-cache bash coreutils gawk git grep nodejs tar xz
+
+# =============================================================================
+# -----------------------------------------------------------------------------
+# ----                CI/CD for microservice images                        ----
+# -----------------------------------------------------------------------------
+# =============================================================================
+
+# -----------------------------------------------------------------------------
+# ----                          PHUSION build                              ----
+# -----------------------------------------------------------------------------
+build-microservice-phusion:
+  stage: build
+  script:
+    - /bin/bash ./gitlab-ci/buildImage.sh "dev" "phusion"
+  only:
+    refs:
+      - develop
+      - master
+      - triggers
+    changes:
+      - sources/**/*
+      - dockerfiles/phusion/sources/**/*
+      - dockerfiles/phusion/Dockerfile
+      - .gitlab-ci.yml
+
+release-microservice-phusion-develop:
+  stage: release
+  script:
+    - /bin/bash ./gitlab-ci/preReleaseHook.sh
+    - /bin/bash ./gitlab-ci/pullImage.sh "dev" "phusion"
+    - /bin/bash ./gitlab-ci/releaseImage.sh "dev" "phusion" "$CI_REGISTRY_IMAGE" "-" "-" "" "false" "ng" "ng" "phusion"
+  only:
+    refs:
+      - develop
+      - triggers
+    changes:
+      - sources/**/*
+      - dockerfiles/phusion/sources/**/*
+      - dockerfiles/phusion/Dockerfile
+      - .gitlab-ci.yml
+
+release-microservice-phusion:
+  stage: release
+  script:
+    - /bin/bash ./gitlab-ci/preReleaseHook.sh
+    - /bin/bash ./gitlab-ci/pullImage.sh "dev" "phusion"
+    - docker logout $CI_REGISTRY
+    - docker login -u "$DH_REGISTRY_USER" -p "$DH_REGISTRY_PASSWORD" $DH_REGISTRY
+    - /bin/bash ./gitlab-ci/releaseImage.sh "dev" "phusion" "$DH_REGISTRY_IMAGE" "-" "image" "" "false" "ng" "ng" "phusion"
+  only:
+    refs:
+      - master
+      - schedules
+      - triggers
+    changes:
+      - sources/**/*
+      - dockerfiles/phusion/sources/**/*
+      - dockerfiles/phusion/Dockerfile
+      - .gitlab-ci.yml
+
+# -----------------------------------------------------------------------------
+# ----                          FFMPEG build                               ----
+# -----------------------------------------------------------------------------
+build-microservice-ffmpeg:
+  stage: build
+  script:
+    - /bin/bash ./gitlab-ci/buildImage.sh "dev" "ffmpeg"
+  only:
+    refs:
+      - develop
+      - master
+      - triggers
+    changes:
+      - sources/**/*
+      - sources_microservice/**/*
+      - dockerfiles/ffmpeg/Dockerfile
+      - .gitlab-ci.yml
+
+release-microservice-ffmpeg-develop:
+  stage: release
+  script:
+    - /bin/bash ./gitlab-ci/preReleaseHook.sh
+    - /bin/bash ./gitlab-ci/pullImage.sh "dev" "ffmpeg"
+    - /bin/bash ./gitlab-ci/releaseImage.sh "dev" "ffmpeg" "$CI_REGISTRY_IMAGE" "-" "-" "" "false" "microservice-ffmpeg" "microservice-ffmpeg" "ffmpeg"
+  only:
+    refs:
+      - develop
+      - triggers
+    changes:
+      - sources/**/*
+      - sources_microservice/**/*
+      - dockerfiles/ffmpeg/Dockerfile
+      - .gitlab-ci.yml
+
+release-microservice-ffmpeg:
+  stage: release
+  script:
+    - /bin/bash ./gitlab-ci/preReleaseHook.sh
+    - /bin/bash ./gitlab-ci/pullImage.sh "dev" "ffmpeg"
+    - docker logout $CI_REGISTRY
+    - docker login -u "$DH_REGISTRY_USER" -p "$DH_REGISTRY_PASSWORD" $DH_REGISTRY
+    - /bin/bash ./gitlab-ci/releaseImage.sh "dev" "ffmpeg" "$DH_REGISTRY_IMAGE" "-" "image" "" "false" "microservice,microservice-ffmpeg" "microservice-ffmpeg" "ffmpeg"
+  only:
+    refs:
+      - master
+      - schedules
+      - triggers
+    changes:
+      - sources/**/*
+      - sources_microservice/**/*
+      - dockerfiles/ffmpeg/Dockerfile
+      - .gitlab-ci.yml
+
+# -----------------------------------------------------------------------------
+# ----                           VAAPI build                               ----
+# -----------------------------------------------------------------------------
+build-microservice-vaapi:
+  stage: build
+  script:
+    - /bin/bash ./gitlab-ci/buildImage.sh "dev" "vaapi"
+  only:
+    refs:
+      - develop
+      - master
+      - triggers
+    changes:
+      - sources/**/*
+      - sources_microservice/**/*
+      - dockerfiles/vaapi/Dockerfile
+      - .gitlab-ci.yml
+
+release-microservice-vaapi-develop:
+  stage: release
+  script:
+    - /bin/bash ./gitlab-ci/preReleaseHook.sh
+    - /bin/bash ./gitlab-ci/pullImage.sh "dev" "vaapi"
+    - /bin/bash ./gitlab-ci/releaseImage.sh "dev" "vaapi" "$CI_REGISTRY_IMAGE" "-" "-" "" "false" "microservice-vaapi" "microservice-vaapi" "vaapi"
+  only:
+    refs:
+      - develop
+      - triggers
+    changes:
+      - sources/**/*
+      - sources_microservice/**/*
+      - dockerfiles/vaapi/Dockerfile
+      - .gitlab-ci.yml
+
+release-microservice-vaapi:
+  stage: release
+  script:
+    - /bin/bash ./gitlab-ci/preReleaseHook.sh
+    - /bin/bash ./gitlab-ci/pullImage.sh "dev" "vaapi"
+    - docker logout $CI_REGISTRY
+    - docker login -u "$DH_REGISTRY_USER" -p "$DH_REGISTRY_PASSWORD" $DH_REGISTRY
+    - /bin/bash ./gitlab-ci/releaseImage.sh "dev" "vaapi" "$DH_REGISTRY_IMAGE" "-" "image" "" "false" "microservice-vaapi" "microservice-vaapi" "vaapi"
+  only:
+    refs:
+      - master
+      - schedules
+      - triggers
+    changes:
+      - sources/**/*
+      - sources_microservice/**/*
+      - dockerfiles/vaapi/Dockerfile
+      - .gitlab-ci.yml
+
+# -----------------------------------------------------------------------------
+# ----                           NVIDIA build                              ----
+# -----------------------------------------------------------------------------
+build-microservice-nvidia:
+  stage: build
+  script:
+    - /bin/bash ./gitlab-ci/buildImage.sh "dev" "nvidia"
+  only:
+    refs:
+      - develop
+      - master
+      - triggers
+    changes:
+      - sources/**/*
+      - sources_microservice/**/*
+      - dockerfiles/nvidia/Dockerfile
+      - .gitlab-ci.yml
+
+release-microservice-nvidia-develop:
+  stage: release
+  script:
+    - /bin/bash ./gitlab-ci/preReleaseHook.sh
+    - /bin/bash ./gitlab-ci/pullImage.sh "dev" "nvidia"
+    - /bin/bash ./gitlab-ci/releaseImage.sh "dev" "nvidia" "$CI_REGISTRY_IMAGE" "-" "-" "" "false" "microservice-nvidia" "microservice-nvidia" "nvidia"
+  only:
+    refs:
+      - develop
+      - triggers
+    changes:
+      - sources/**/*
+      - sources_microservice/**/*
+      - dockerfiles/nvidia/Dockerfile
+      - .gitlab-ci.yml
+
+release-microservice-nvidia:
+  stage: release
+  script:
+    - /bin/bash ./gitlab-ci/preReleaseHook.sh
+    - /bin/bash ./gitlab-ci/pullImage.sh "dev" "nvidia"
+    - docker logout $CI_REGISTRY
+    - docker login -u "$DH_REGISTRY_USER" -p "$DH_REGISTRY_PASSWORD" $DH_REGISTRY
+    - /bin/bash ./gitlab-ci/releaseImage.sh "dev" "nvidia" "$DH_REGISTRY_IMAGE" "-" "image" "" "false" "microservice-nvidia" "microservice-nvidia" "nvidia"
+  only:
+    refs:
+      - master
+      - schedules
+      - triggers
+    changes:
+      - sources/**/*
+      - sources_microservice/**/*
+      - dockerfiles/nvidia/Dockerfile
+      - .gitlab-ci.yml
+
+# -----------------------------------------------------------------------------
+# ----                           ALPINE build                              ----
+# -----------------------------------------------------------------------------
+build-microservice-alpine:
+  stage: build
+  script:
+    - /bin/bash ./gitlab-ci/buildImage.sh "dev" "alpine"
+  only:
+    refs:
+      - develop
+      - master
+      - triggers
+    changes:
+      - sources/**/*
+      - sources_microservice/**/*
+      - dockerfiles/alpine/Dockerfile
+      - .gitlab-ci.yml
+
+release-microservice-alpine-develop:
+  stage: release
+  script:
+    - /bin/bash ./gitlab-ci/preReleaseHook.sh
+    - /bin/bash ./gitlab-ci/pullImage.sh "dev" "alpine"
+    - /bin/bash ./gitlab-ci/releaseImage.sh "dev" "alpine" "$CI_REGISTRY_IMAGE" "-" "-" "" "false" "microservice-alpine" "microservice-alpine" "alpine"
+  only:
+    refs:
+      - develop
+      - triggers
+    changes:
+      - sources/**/*
+      - sources_microservice/**/*
+      - dockerfiles/alpine/Dockerfile
+      - .gitlab-ci.yml
+
+release-microservice-alpine:
+  stage: release
+  script:
+    - /bin/bash ./gitlab-ci/preReleaseHook.sh
+    - /bin/bash ./gitlab-ci/pullImage.sh "dev" "alpine"
+    - docker logout $CI_REGISTRY
+    - docker login -u "$DH_REGISTRY_USER" -p "$DH_REGISTRY_PASSWORD" $DH_REGISTRY
+    - /bin/bash ./gitlab-ci/releaseImage.sh "dev" "alpine" "$DH_REGISTRY_IMAGE" "-" "image" "" "false" "microservice-alpine" "microservice-alpine" "alpine"
+  only:
+    refs:
+      - master
+      - schedules
+      - triggers
+    changes:
+      - sources/**/*
+      - sources_microservice/**/*
+      - dockerfiles/alpine/Dockerfile
+      - .gitlab-ci.yml

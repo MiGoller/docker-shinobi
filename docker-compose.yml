@@ -1,0 +1,28 @@
+version: '2'
+services:
+    # db:
+    #     image: mariadb
+    #     env_file:
+    #         - ./example_mariadb/MySQL.env
+    #     volumes:
+    #         - ./datadir_mariadb:/var/lib/mysql
+    app:
+        build:
+            context: ./
+            dockerfile: ./Dockerfile
+        env_file:
+            # - ./example_mariadb/MySQL.env
+            - ./example/SQLite.env
+            - ./example/Shinobi.env
+        environment: 
+            - "TZ=Europe/Berlin"
+        volumes:
+            - /etc/localtime:/etc/localtime:ro
+            - /etc/timezone:/etc/timezone:ro
+            - ./example/config:/config
+            - ./videos:/opt/shinobi/videos
+            - ./datadir_sqlite:/opt/dbdata:rw
+            - ./datadir_mariadb:/var/lib/mysql
+            - /dev/shm/shinobiDockerTemp:/dev/shm/streams
+        ports:
+            - "8080:8080"
