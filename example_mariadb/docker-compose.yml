@@ -1,0 +1,23 @@
+version: '2'
+services:
+    db:
+        image: mariadb
+        env_file:
+            - MySQL.env
+        volumes:
+            - ./datadir:/var/lib/mysql
+    app:
+        image: migoller/shinobidocker
+        env_file:
+            - MySQL.env
+            - Shinobi.env
+        environment: 
+            - "TZ=Europe/Berlin"
+        volumes:
+            - /etc/localtime:/etc/localtime:ro
+            - /etc/timezone:/etc/timezone:ro
+            - ./config:/config
+            - ./videos:/opt/shinobi/videos
+            - /dev/shm/shinobiDockerTemp:/dev/shm/streams
+        ports:
+            - "8080:8080"
