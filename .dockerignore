@@ -1,16 +1,9 @@
 .git
-datadir*
 example*
-gitlab-ci
-node_modules
-videos
 .gitignore
-.gitlab-ci.yml
-.npmignore
 COPYING
 Dockerfile
 docker-compose*.yml
-fake-*.sh
 LICENSE
-runImage.sh
 *.vscode
+.github
